@@ -1,7 +1,8 @@
-import discord, hashlib, json
+import discord, hashlib, json, socket
 from discord.ext import commands
+from mcstatus import MinecraftServer
 
-bot = commands.Bot(command_prefix='a#')
+bot = commands.Bot(command_prefix='an.')
 bot.remove_command("help")
 
 @bot.event
@@ -17,8 +18,30 @@ async def trip(ctx,*,seed):
     print(f"# {ctx.author} generated the tripcode from '{seed}' to '{tripcode}'")
 
 @bot.command()
+async def mcstatus(ctx,ip):
+    try:
+        server = MinecraftServer(ip,25565)
+        status = server.status()
+        latency = server.ping()
+        query = server.query()
+        await ctx.reply(f"""
+runs on: `{query.software.brand}`
+online: `{status.players.online}/{status.players.max}`
+players: `{query.players.names}`
+latency: `{int(latency)} ms`
+        """)
+    except socket.gaierror:
+        await ctx.reply("server ip isn't correct")
+    except ConnectionRefusedError:
+        await ctx.reply("connection refused")
+    except OSError:
+        await ctx.reply("server responded with no information")
+    except socket.timeout:
+        await ctx.reply("timed out")
+
+@bot.command()
 async def help(ctx):
-    await ctx.reply("you can generate tripcodes with `a#trip {seed}`\n(note that these aren't 4chan-usable tripcode hashes, i just threw up this code in 2 minutes)")
+    await ctx.reply("`an.mcstatus <ip>` for checking minecraft server status\n`an.trip <seed>` for doing microhashes")
 
 # you will need to create a token.json file, and fill it with this:
 # {
